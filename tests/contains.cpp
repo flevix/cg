@@ -1,290 +1,394 @@
 #include <gtest/gtest.h>
+
+#include "random_utils.h"
+
+#include <boost/assign/list_of.hpp>
+
+#include <cg/operations/contains/segment_point.h>
 #include <cg/operations/contains/triangle_point.h>
-#include <cg/operations/contains/rectangle_point.h>
 #include <cg/operations/contains/contour_point.h>
-#include <initializer_list>
-#include <vector>
+#include <cg/convex_hull/graham.h>
 
-using namespace cg;
-
-// ---- START point in triangle --
-TEST(triangle_test, t1)
+TEST(contains, triangle_point)
 {
-    point_2 p1(0, 0), p2(2, 2), p3(4, 0);
+   using cg::point_2;
 
-    triangle_2 tr(p1, p2, p3);
-    point_2 p(2, 1);
-    EXPECT_EQ(contains(tr, p), true);
+   cg::triangle_2 t(point_2(0, 0), point_2(1, 1), point_2(2, 0));
+
+   for (size_t l = 0; l != 3; ++l)
+      EXPECT_TRUE(cg::contains(t, t[l]));
+
+   EXPECT_TRUE(cg::contains(t, point_2(1, 0.5)));
+
+   EXPECT_TRUE(cg::contains(t, point_2(1, 0)));
+   EXPECT_TRUE(cg::contains(t, point_2(0.5, 0.5)));
+   EXPECT_TRUE(cg::contains(t, point_2(1.5, 0.5)));
+
+   EXPECT_FALSE(cg::contains(t, point_2(0, 1)));
+   EXPECT_FALSE(cg::contains(t, point_2(2, 1)));
+   EXPECT_FALSE(cg::contains(t, point_2(1, -1)));
 }
 
-TEST(triangle_test, t2)
+TEST(contains, segment_point)
 {
-    point_2 p1(0, 0), p2(2, 2), p3(4, 0);
+   using cg::point_2;
 
-    triangle_2 tr(p1, p2, p3);
-    point_2 p(0, 0);
-    EXPECT_EQ(contains(tr, p), true);
+   cg::segment_2 s(point_2(0, 0), point_2(2, 2));
+   for (size_t l = 0; l != 2; ++l)
+      EXPECT_TRUE(cg::contains(s, s[l]));
+
+   EXPECT_TRUE(cg::contains(s, point_2(1, 1)));
+
+   EXPECT_FALSE(cg::contains(s, point_2(-1, -1)));
+   EXPECT_FALSE(cg::contains(s, point_2(4, 4)));
+
+   EXPECT_FALSE(cg::contains(s, point_2(1, 0)));
+   EXPECT_FALSE(cg::contains(s, point_2(0, 1)));
 }
 
-TEST(triangle_test, t3)
+TEST(contains, non_convex_contour_point_test1)
 {
-    point_2 p1(0, 0), p2(2, 2), p3(4, 0);
+   std::vector<cg::point_2> v = boost::assign::list_of
+                                 (cg::point_2(0, 0))
+                                 (cg::point_2(10, 0))
+                                 (cg::point_2(10, 10));
 
-    triangle_2 tr(p1, p2, p3);
-    point_2 p(1, 0);
-    EXPECT_EQ(contains(tr, p), true);
+   cg::point_2 p2(3, 3);
+   cg::contour_2 tr(v);
+   EXPECT_EQ(contains(tr, p2), true);
 }
 
-TEST(triangle_test, t4)
+TEST(contains, non_convex_contour_point_test2)
 {
-    point_2 p1(0, 0), p2(2, 2), p3(4, 0);
+   std::vector<cg::point_2> v = boost::assign::list_of
+                                 (cg::point_2(2, 3))
+                                 (cg::point_2(2, 2))
+                                 (cg::point_2(3, 1))
+                                 (cg::point_2(5, 1))
+                                 (cg::point_2(8, 4))
+                                 (cg::point_2(6, 6))
+                                 (cg::point_2(4, 6))
+                                 (cg::point_2(3, 5));
 
-    triangle_2 tr(p1, p2, p3);
-    point_2 p(0, 1);
-    EXPECT_EQ(contains(tr, p), false);
+   cg::contour_2 tr(v);
+   EXPECT_EQ(contains(tr, cg::point_2(2, 2)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3, 1)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3, 2)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3, 5)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3, 6)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(5, 1)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(5, 2)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(8, 4)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(8, 3)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(8, 5)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(6, 7)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(2.5, 3.5)), true);
 }
 
-TEST(triangle_test, t5)
+TEST(contains, non_convex_contour_point_test3)
 {
-    point_2 p1(0, 0), p2(2, 2), p3(4, 0);
+   std::vector<cg::point_2> v = boost::assign::list_of
+                                 (cg::point_2(1, 0))
+                                 (cg::point_2(2, -2))
+                                 (cg::point_2(3, 0))
+                                 (cg::point_2(4, -2))
+                                 (cg::point_2(5, 1))
+                                 (cg::point_2(6, -1))
+                                 (cg::point_2(7, 0))
+                                 (cg::point_2(7, 1))
+                                 (cg::point_2(5, 2))
+                                 (cg::point_2(4, 0))
+                                 (cg::point_2(2, 2));
 
-    triangle_2 tr(p1, p2, p3);
-    point_2 p(1, 1);
-    EXPECT_EQ(contains(tr, p), true);
+   cg::contour_2 tr(v);
+   EXPECT_EQ(contains(tr, cg::point_2(1, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(2, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(4, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(5, 0)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(6, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(7, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(8, 0)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(0, 0)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(1, 1)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(2, 1)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3.5, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(4, 1)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(5, -1)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(4, -0.5)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3.5, 0.001)), true);
 }
 
-TEST(triangle_test, t6)
+TEST(contains, non_convex_contour_point_test4)
 {
-    point_2 p1(0, 0), p2(2, 2), p3(2, 0);
+   std::vector<cg::point_2> v = boost::assign::list_of
+                                 (cg::point_2(6, -1))
+                                 (cg::point_2(7, 0))
+                                 (cg::point_2(7, 1))
+                                 (cg::point_2(5, 2))
+                                 (cg::point_2(4, 0))
+                                 (cg::point_2(2, 2))
+                                 (cg::point_2(1, 0))
+                                 (cg::point_2(2, -2))
+                                 (cg::point_2(3, 0))
+                                 (cg::point_2(4, -2))
+                                 (cg::point_2(5, 1));
 
-    triangle_2 tr(p1, p2, p3);
-    point_2 p(1, 0.5);
-    EXPECT_EQ(contains(tr, p), true);
+   cg::contour_2 tr(v);
+   EXPECT_EQ(contains(tr, cg::point_2(1, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(2, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(4, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(5, 0)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(6, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(7, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(8, 0)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(0, 0)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(1, 1)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(2, 1)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3.5, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(4, 1)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(5, -1)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(4, -0.5)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3.5, 0.001)), true);
 }
 
-TEST(triangle_test, t7)
+TEST(contains, non_convex_contour_point_test5)
 {
-    point_2 p1(0, 0), p2(0, 2), p3(2, 0);
+   std::vector<cg::point_2> v = boost::assign::list_of
+                                 (cg::point_2(1, 0))
+                                 (cg::point_2(2, -2))
+                                 (cg::point_2(3, 0))
+                                 (cg::point_2(4, -2))
+                                 (cg::point_2(5, 1))
+                                 (cg::point_2(6, -1))
+                                 (cg::point_2(7, 0))
 
-    triangle_2 tr(p1, p2, p3);
-    point_2 p(1, 1);
-    EXPECT_EQ(contains(tr, p), true);
-}
-// ---- END point in triangle --
+                                 (cg::point_2(9, 0))
+                                 (cg::point_2(10, -2))
+                                 (cg::point_2(11, 0))
+                                 (cg::point_2(13, 0))
+                                 (cg::point_2(14, 1))
+                                 (cg::point_2(15, 0))
+                                 (cg::point_2(15, 3))
 
-// -- START point in convex contour --
-TEST(convex_contour_point, t1)
-{
-   contour_2 contour( {{2, 0}, {2, 2}, {0, 0}});
-   point_2 p {1, 0.5};
-   EXPECT_EQ(convex_contains(contour, p), true);
-}
+                                 (cg::point_2(7, 1))
+                                 (cg::point_2(5, 2))
+                                 (cg::point_2(4, 0))
+                                 (cg::point_2(2, 2));
 
-TEST(convex_contour_point, t2)
-{
-   contour_2 contour( {{2, 0}, {2, 2}, {0, 2}, {0, 0}});
-   point_2 p {1, 1};
-   EXPECT_EQ(convex_contains(contour, p), true);
-}
+   cg::contour_2 tr(v);
+   EXPECT_EQ(contains(tr, cg::point_2(1, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(2, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(4, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(5, 0)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(6, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(7, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(8, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(9, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(10, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(11, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(12, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(13, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(14, 0)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(15, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(16, 0)), false);
 
-
-TEST(convex_contour_point, t3)
-{
-   contour_2 contour( {{2, 0}, {2, 2}, {0, 2}, {0, 0}});
-   point_2 p {-1, 1};
-   EXPECT_EQ(convex_contains(contour, p), false);
-}
-
-TEST(convex_contour_point, t4)
-{
-   contour_2 contour( {{2, 0}, {4, 1}, {5, 3}, {4, 5}, {2, 4}, {0, 2}, {0, 0}});
-   point_2 p {4, 4};
-   EXPECT_EQ(convex_contains(contour, p), true);
-}
-
-TEST(convex_contour_point, t5)
-{
-   contour_2 contour( {{2, 0}, {4, 1}, {5, 3}, {4, 5}, {2, 4}, {0, 2}, {0, 0}});
-   point_2 p {1, 3};
-   EXPECT_EQ(convex_contains(contour, p), true);
-}
-
-TEST(convex_contour_point, t6)
-{
-   contour_2 contour( {{2, 0}, {4, 1}, {5, 3}, {4, 5}, {2, 4}, {0, 2}, {0, 0}});
-   point_2 p {1, 4};
-   EXPECT_EQ(convex_contains(contour, p), false);
+   EXPECT_EQ(contains(tr, cg::point_2(0, 0)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(1, 1)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(2, 1)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3.5, 0)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(4, 1)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(5, -1)), false);
+   EXPECT_EQ(contains(tr, cg::point_2(4, -0.5)), true);
+   EXPECT_EQ(contains(tr, cg::point_2(3.5, 0.001)), true);
 }
 
-TEST(convex_contour_point, t7)
+namespace details
 {
-   contour_2 contour( {{2, 0}, {0, 2}, {0, 0}});
-   point_2 p {1, 0};
-   EXPECT_EQ(convex_contains(contour, p), true);
+   bool point_in_ccw_contour(cg::contour_2 const & c, cg::point_2 const & q)
+   {
+      size_t cnt_vertices = c.size();
+      if (cnt_vertices == 0)
+         return false;
+
+      if (std::find(c.begin(), c.end(), q) != c.end())
+         return true;
+
+
+      if (cnt_vertices == 1)
+      {
+         return c[0] == q;
+      }
+
+      if (cnt_vertices == 2)
+      {
+         return cg::contains(cg::segment_2(c[0], c[1]), q);
+      }
+
+      cg::contour_2::circulator_t t2 = c.circulator();
+      cg::contour_2::circulator_t t1 = t2++;
+
+      for (size_t i = 0; i < cnt_vertices; ++i)
+      {
+         if (cg::orientation(*t1, *t2, q) == cg::CG_RIGHT)
+         {
+            return false;
+         }
+         ++t1;
+         ++t2;
+      }
+
+      return true;
+   }
 }
 
-TEST(convex_contour_point, t8)
+TEST(contains, convex_ccw_point1)
 {
-   contour_2 contour( {{2, 0}, {0, 2}, {0, 0}});
-   point_2 p {0, 1};
-   EXPECT_EQ(convex_contains(contour, p), true);
-}
-// -- END point in convex contour --
+   using cg::point_2;
+   using cg::contour_2;
 
-// -- START point in arbitrary contour --
-TEST(contour_point, t1)
-{
-   contour_2 contour( {{0, 0}, {2, 2}, {2, 0}});
-   point_2 p {1, 0.5};
-   EXPECT_EQ(contains(contour, p), true);
-}
+   std::vector<point_2> pts = boost::assign::list_of(point_2(1, 1));
 
-TEST(contour_point, t2)
-{
-   contour_2 contour( {{0, 0}, {0, 2}, {2, 2}, {2, 0}});
-   point_2 p {1, 1};
-   EXPECT_EQ(contains(contour, p), true);
+   contour_2 cont(pts);
+   for (size_t i = 0; i < pts.size(); i++)
+   {
+      EXPECT_TRUE(cg::convex_contains(cont, pts[i]));
+   }
+
+   EXPECT_TRUE(cg::convex_contains(cont, point_2(1, 1)));
+
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(0, 0)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(2, 2)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(0, 1)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(1, 0)));
 }
 
-
-TEST(contour_point, t3)
+TEST(contains, convex_ccw_point2)
 {
-   contour_2 contour( {{0, 0}, {0, 2}, {2, 2}, {2, 0}});
-   point_2 p {-1, 1};
-   EXPECT_EQ(contains(contour, p), false);
+   using cg::point_2;
+   using cg::contour_2;
+
+   std::vector<point_2> pts = boost::assign::list_of(point_2(1, 1))
+                                                    (point_2(3, 3));
+
+   contour_2 cont(pts);
+   for (size_t i = 0; i < pts.size(); i++)
+   {
+      EXPECT_TRUE(cg::convex_contains(cont, pts[i]));
+   }
+
+   EXPECT_TRUE(cg::convex_contains(cont, point_2(2, 2)));
+
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(0, 0)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(4, 4)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(0, 1)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(1, 0)));
 }
 
-TEST(contour_point, t4)
+TEST(contains, convex_ccw_point3)
 {
-   contour_2 contour( {{0, 0}, {0, 2}, {2, 4}, {4, 5}, {5, 3}, {4, 1}, {2, 0}});
-   point_2 p {4, 4};
-   EXPECT_EQ(contains(contour, p), true);
+   using cg::point_2;
+   using cg::contour_2;
+
+   std::vector<point_2> pts = boost::assign::list_of(point_2(0, 1))
+                                                    (point_2(0, 0))
+                                                    (point_2(1, -1));
+
+   contour_2 cont(pts);
+   for (size_t i = 0; i < pts.size(); i++)
+   {
+      EXPECT_TRUE(cg::convex_contains(cont, pts[i]));
+   }
+
+   for (size_t i = 0; i < pts.size(); i++)
+   {
+      EXPECT_TRUE(cg::convex_contains(cont, pts[i]));
+   }
 }
 
-TEST(contour_point, t5)
+TEST(contains, convex_ccw_point4)
 {
-   contour_2 contour( {{0, 0}, {0, 2}, {2, 4}, {4, 5}, {5, 3}, {4, 1}, {2, 0}});
-   point_2 p {1, 3};
-   EXPECT_EQ(contains(contour, p), true);
+   using cg::point_2;
+   using cg::contour_2;
+
+   std::vector<point_2> pts = boost::assign::list_of(point_2(0, 0))
+                                                    (point_2(2, 4))
+                                                    (point_2(0, 4))
+                                                    (point_2(-2, 4));
+
+   contour_2 cont(pts);
+   for (size_t i = 0; i < pts.size(); i++)
+   {
+      EXPECT_TRUE(cg::convex_contains(cont, pts[i]));
+   }
+
+   EXPECT_TRUE(cg::convex_contains(cont, point_2(1, 2)));
+   EXPECT_TRUE(cg::convex_contains(cont, point_2(1, 3)));
+   EXPECT_TRUE(cg::convex_contains(cont, point_2(0, 2)));
+   EXPECT_TRUE(cg::convex_contains(cont, point_2(-1, 2)));
+   EXPECT_TRUE(cg::convex_contains(cont, point_2(-1, 3)));
+
+
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(1, 1)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(-1, 1)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(1, 5)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(1, 6)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(-1, 5)));
+   EXPECT_FALSE(cg::convex_contains(cont, point_2(-1, 6)));
 }
 
-TEST(contour_point, t6)
+TEST(contains, convex_ccw_point_uniform0)
 {
-   contour_2 contour( {{0, 0}, {0, 2}, {2, 4}, {4, 5}, {5, 3}, {4, 1}, {2, 0}});
-   point_2 p {1, 4};
-   EXPECT_EQ(contains(contour, p), false);
+   using cg::point_2;
+   using cg::contour_2;
+
+   for (size_t cnt_points = 3; cnt_points < 10; cnt_points++)
+   {
+      std::vector<point_2> pts = uniform_points(cnt_points);
+      std::vector<point_2> pts2 = uniform_points(100000);
+
+      auto it = cg::graham_hull(pts.begin(), pts.end());
+      pts.resize(std::distance(pts.begin(), it));
+
+      contour_2 cont(pts);
+
+      for (size_t i = 0; i < cont.size(); i++)
+      {
+         EXPECT_TRUE(cg::convex_contains(cont, cont[i]));
+      }
+
+      for (size_t i = 0; i < pts2.size(); i++)
+      {
+         EXPECT_EQ(cg::convex_contains(cont, pts2[i]), details::point_in_ccw_contour(cont, pts2[i]));
+      }
+   }
 }
 
-TEST(contour_point, t7)
+TEST(contains, convex_ccw_point_uniform1)
 {
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {1, 0};
+   using cg::point_2;
+   using cg::contour_2;
 
-   EXPECT_EQ(contains(contour, p), true);
+   for (size_t cnt_tests = 3; cnt_tests < 10; cnt_tests++)
+   {
+      std::vector<point_2> pts = uniform_points(100000);
+      std::vector<point_2> pts2 = uniform_points(100000);
+
+      auto it = cg::graham_hull(pts.begin(), pts.end());
+      pts.resize(std::distance(pts.begin(), it));
+
+      contour_2 cont(pts);
+
+      for (size_t i = 0; i < cont.size(); i++)
+      {
+         EXPECT_TRUE(cg::convex_contains(cont, cont[i]));
+      }
+
+      for (size_t i = 0; i < pts2.size(); i++)
+      {
+         EXPECT_EQ(cg::convex_contains(cont, pts2[i]), details::point_in_ccw_contour(cont, pts2[i]));
+      }
+   }
 }
-
-TEST(contour_point, t8)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {3, 0};
-
-   EXPECT_EQ(contains(contour, p), false);
-}
-
-TEST(contour_point, t9)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {0, 0};
-
-   EXPECT_EQ(contains(contour, p), true);
-}
-
-TEST(contour_point, t10)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {5, 1};
-
-   EXPECT_EQ(contains(contour, p), true);
-}
-
-TEST(contour_point, t11)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {3, 1};
-
-   EXPECT_EQ(contains(contour, p), false);
-}
-
-
-TEST(contour_point, t12)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {0, 1};
-
-   EXPECT_EQ(contains(contour, p), false);
-}
-
-TEST(contour_point, t13)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {7, 3};
-
-   EXPECT_EQ(contains(contour, p), true);
-}
-
-TEST(contour_point, t14)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {7, 2};
-
-   EXPECT_EQ(contains(contour, p), false);
-}
-
-TEST(contour_point, t15)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {7.00001, 3};
-
-   EXPECT_EQ(contains(contour, p), false);
-}
-
-TEST(contour_point, t16)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {3, 2};
-
-   EXPECT_EQ(contains(contour, p), true);
-}
-
-TEST(contour_point, t17)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {3.00001, 2};
-
-   EXPECT_EQ(contains(contour, p), true);
-}
-
-TEST(contour_point, t18)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 3}});
-   point_2 p {2.9999, 2};
-
-   EXPECT_EQ(contains(contour, p), true);
-}
-
-TEST(contour_point, t19)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 4}});
-   point_2 p {3, 4};
-
-   EXPECT_EQ(contains(contour, p), true);
-}
-
-TEST(contour_point, t20)
-{
-   contour_2 contour( {{0, 0}, {2, 0}, {3, 2}, {4, 0}, {6, 0}, {7, 3}, {3, 4}});
-   point_2 p {3.00001, 4};
-
-   EXPECT_EQ(contains(contour, p), false);
-}
-// -- END point in arbitrary contour --

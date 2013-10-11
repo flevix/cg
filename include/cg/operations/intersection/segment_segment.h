@@ -147,20 +147,11 @@ namespace cg
          return boost::none;
       }
 
-      std::cout.precision(20);
-      /*auto res_d = detail::intersection_d ( a, b, eps_pwr );
-      if ( res_d.is_initialized() ) {
-         return *res_d;
-      } */
-
       auto res = detail::intersection_i ( a, b, eps_pwr );
       if (res) {
          return *res;
       }
 
-      return boost::none;
-
       return detail::intersection_r ( a, b );
-
    }
 }

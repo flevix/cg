@@ -29,10 +29,10 @@ namespace cg
 
    struct orientation_d
    {
-      boost::optional<orientation_t> operator() (point_2 const& a, point_2 const& b, point_2 const& c) const
+      boost::optional<orientation_t> operator() (point_2 const& a, point_2 const& b, point_2 const& c, point_2 const& d) const
       {
-         double l = (b.x - a.x) * (c.y - a.y);
-         double r = (b.y - a.y) * (c.x - a.x);
+         double l = (b.x - a.x) * (d.y - c.y);
+         double r = (b.y - a.y) * (d.x - c.x);
          double res = l - r;
          double eps = (fabs(l) + fabs(r)) * 8 * std::numeric_limits<double>::epsilon();
 
@@ -52,13 +52,13 @@ namespace cg
 
    struct orientation_i
    {
-      boost::optional<orientation_t> operator() (point_2 const& a, point_2 const& b, point_2 const& c) const
+      boost::optional<orientation_t> operator() (point_2 const& a, point_2 const& b, point_2 const& c, point_2 const& d) const
       {
          typedef boost::numeric::interval_lib::unprotect<boost::numeric::interval<double> >::type interval;
 
          boost::numeric::interval<double>::traits_type::rounding _;
-         interval res =   (interval(b.x) - a.x) * (interval(c.y) - a.y)
-                          - (interval(b.y) - a.y) * (interval(c.x) - a.x);
+         interval res =   (interval(b.x) - a.x) * (interval(d.y) - c.y)
+                          - (interval(b.y) - a.y) * (interval(d.x) - c.x);
 
          if (res.lower() > 0)
          {
@@ -81,10 +81,10 @@ namespace cg
 
    struct orientation_r
    {
-      boost::optional<orientation_t> operator() (point_2 const& a, point_2 const& b, point_2 const& c) const
+      boost::optional<orientation_t> operator() (point_2 const& a, point_2 const& b, point_2 const& c, point_2 const& d) const
       {
-         mpq_class res =   (mpq_class(b.x) - a.x) * (mpq_class(c.y) - a.y)
-                           - (mpq_class(b.y) - a.y) * (mpq_class(c.x) - a.x);
+         mpq_class res =   (mpq_class(b.x) - a.x) * (mpq_class(d.y) - c.y)
+                           - (mpq_class(b.y) - a.y) * (mpq_class(d.x) - c.x);
 
          int cres = cmp(res, 0);
 
@@ -100,21 +100,32 @@ namespace cg
 
          return CG_COLLINEAR;
       }
+
+      boost::optional<orientation_t> operator()(point_2 const& a, point_2 const& b, point_2 const& c) const
+      {
+         return (*this)(a, b, a, c);
+      }
    };
+
+   inline orientation_t orientation4(point_2 const& a, point_2 const& b, point_2 const& c, point_2 const& d)
+   {
+      if (boost::optional<orientation_t> v = orientation_d()(a, b, c, d))
+      {
+         return *v;
+      }
+
+      if (boost::optional<orientation_t> v = orientation_i()(a, b, c, d))
+      {
+         return *v;
+      }
+
+      return *orientation_r()(a, b, c, d);
+
+   }
 
    inline orientation_t orientation(point_2 const& a, point_2 const& b, point_2 const& c)
    {
-      if (boost::optional<orientation_t> v = orientation_d()(a, b, c))
-      {
-         return *v;
-      }
-
-      if (boost::optional<orientation_t> v = orientation_i()(a, b, c))
-      {
-         return *v;
-      }
-
-      return *orientation_r()(a, b, c);
+      return orientation4(a, b, a, c);
    }
 
    inline bool counterclockwise(contour_2 const& contour)
@@ -128,8 +139,8 @@ namespace cg
       return orientation(point, prev, next) == CG_RIGHT;
    }
 
-
-   inline bool collinear_are_ordered_along_line(point_2 const & a, point_2 const & b, point_2 const & c)
+   template <class Scalar>
+   bool collinear_are_ordered_along_line(point_2t<Scalar> const & a, point_2t<Scalar> const & b, point_2t<Scalar> const & c)
    {
       return (a <= b && b <= c) || (c <= b && b <= a);
    }

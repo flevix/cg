@@ -1,2 +1,6 @@
 *.user
 *.kdev4
+*.autosave
+*.un~
+build
+.DS_Store

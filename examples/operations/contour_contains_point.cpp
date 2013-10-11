@@ -18,9 +18,9 @@ using cg::point_2f;
 using cg::point_2;
 
 
-struct triangle_contains_point_viewer : cg::visualization::viewer_adapter
+struct contour_contains_point_viewer : cg::visualization::viewer_adapter
 {
-   triangle_contains_point_viewer()
+   contour_contains_point_viewer()
       : contour(std::vector<point_2>({point_2(0, 0), point_2(100, 100), point_2(200, 0)}))
    {}
 
@@ -87,6 +87,6 @@ private:
 int main(int argc, char ** argv)
 {
    QApplication app(argc, argv);
-   triangle_contains_point_viewer viewer;
+   contour_contains_point_viewer viewer;
    cg::visualization::run_viewer(&viewer, "Contour contains point");
 }
