@@ -44,7 +44,7 @@ namespace cg
 
       boost::optional<point_2> intersection_d ( segment_2 const & a, segment_2 const & b, int eps_pwr )
       {
-         typedef double Scalar;
+         //typedef double Scalar;
 
          double det = ( a[0].x - a[1].x ) * ( b[0].y - b[1].y ) - ( a[0].y - a[1].y ) * ( b[0].x - b[1].x );
          double t1 = a[0].x * a[1].y - a[0].y * a[1].x;
