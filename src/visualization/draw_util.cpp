@@ -31,4 +31,11 @@ namespace visualization
       }
       while (it != beg);
    }
+
+   void draw(drawer_type & drawer, triangle_2 const & tr)
+   {
+       drawer.draw_line(tr[0], tr[2]);
+       drawer.draw_line(tr[2], tr[1]);
+       drawer.draw_line(tr[1], tr[0]);
+   }
 }}

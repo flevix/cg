@@ -7,6 +7,7 @@
 #include <cg/triangulation/delaunay.h>
 
 using cg::point_2f;
+using cg::triangle_2;
 
 struct delaunay_viewer : cg::visualization::viewer_adapter
 {
@@ -17,8 +18,9 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
     {
         drawer.set_color(Qt::red);
 
-        for (size_t i = 1; i < pts.size(); i++) {
-            drawer.draw_line(pts[i - 1], pts[i]);
+        for (size_t i = 2; i < pts.size(); i += 3) {
+            triangle_2 tr(pts[i - 2], pts[i - 1], pts[i]);
+            cg::visualization::draw(drawer, tr);
         }
     }
  
@@ -31,7 +33,7 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
     bool on_release(const point_2f & p)
     {
        pts.push_back(p);
-       return pts.size() > 1;
+       return pts.size() > 2;
     }
 
     bool on_double_click(const cg::point_2f &)
