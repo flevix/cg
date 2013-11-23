@@ -16,11 +16,14 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
  
     void draw(cg::visualization::drawer_type & drawer) const
     {
-        drawer.set_color(Qt::red);
-
         for (size_t i = 2; i < pts.size(); i += 3) {
+            drawer.set_color(Qt::red);
+
             triangle_2 tr(pts[i - 2], pts[i - 1], pts[i]);
             cg::visualization::draw(drawer, tr);
+
+            drawer.set_color(Qt::yellow);
+            cg::visualization::draw(drawer, tr.center(), tr.circumradius());
         }
     }
  
