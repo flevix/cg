@@ -10,25 +10,24 @@ namespace cg
    template <class Scalar>
    struct contour_2t;
 
-   typedef contour_2t<float>     contour_2f;
-   typedef contour_2t<int>       contour_2i;
-   typedef contour_2t<double>    contour_2;
+   typedef contour_2t<float> contour_2f;
+   typedef contour_2t<double> contour_2;
+   typedef contour_2t<int>   contour_2i;
 
    template <class Scalar>
    struct contour_2t
    {
+      contour_2t() {}
       contour_2t(std::vector<point_2t<Scalar> > const& pts) : pts_(pts)
       {}
 
       typedef typename std::vector<point_2t<Scalar> >::const_iterator const_iterator;
       typedef typename common::range_circulator<contour_2t<Scalar> > circulator_t;
 
-
       const_iterator begin() const
       {
          return pts_.begin();
       }
-
       const_iterator end() const
       {
          return pts_.end();
@@ -69,12 +68,21 @@ namespace cg
          return pts_[idx];
       }
 
+      point_2t<Scalar> front() const
+      {
+         return pts_.front();
+      }
+
+      point_2t<Scalar> back() const
+      {
+         return pts_.back();
+      }
+
    private:
       friend struct contour_builder_type;
 
       std::vector<point_2t<Scalar> > pts_;
    };
 
-   typedef common::range_circulator<contour_2f> contour_circulator_f;
-   typedef common::range_circulator<contour_2>  contour_circulator;
+   typedef common::range_circulator<contour_2f> contour_circulator;
 }
