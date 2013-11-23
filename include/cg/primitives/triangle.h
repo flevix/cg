@@ -25,22 +25,20 @@ namespace cg
 
       segment_2t<Scalar> side(size_t id) const { return segment_2t<Scalar>(pts_[(id + 1) % 3], pts_[(id + 2) % 3]); }
 
-      point_2t<Scalar> center() {
-          point_2t<Scalar> a = pts_[0];
-          point_2t<Scalar> b = pts_[1];
-          point_2t<Scalar> c = pts_[2];
-          Scalar ab = cg::distance(a, b);
-          Scalar bc = cg::distance(b, c);
-          Scalar ac = cg::distance(a, c);
-          Scalar d = ab + bc + ac;
+      point_2t<Scalar> circumcenter() {
+          point_2t<Scalar> a = pts_[0], b = pts_[1], c = pts_[2];
+          Scalar ma = a.x * a.x + a.y * a.y;
+          Scalar mb = b.x * b.x + b.y * b.y;
+          Scalar mc = c.x * c.x + c.y * c.y;
+          Scalar d = ( a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y) ) * 2;
+          Scalar x = (ma * (b.y - c.y) + mb * (c.y - a.y) + mc * (a.y - b.y)) / d;
+          Scalar y = (ma * (c.x - b.x) + mb * (a.x - c.x) + mc * (b.x - a.x)) / d;
 
-          Scalar x = (a.x * bc + b.x * ac + c.x * ab) / d;
-          Scalar y = (a.y * bc + b.y * ac + c.y * ab) / d;
           return point_2t<Scalar>(x, y);
       }
 
       Scalar circumradius() {
-          return cg::distance(center(), pts_[0]);
+          return cg::distance(circumcenter(), pts_[0]);
       }
 
    private:

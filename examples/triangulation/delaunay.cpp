@@ -23,7 +23,7 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
             cg::visualization::draw(drawer, tr);
 
             drawer.set_color(Qt::yellow);
-            cg::visualization::draw(drawer, tr.center(), tr.circumradius());
+            cg::visualization::draw(drawer, tr.circumcenter(), tr.circumradius());
         }
     }
  
