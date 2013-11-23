@@ -47,6 +47,7 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
 
 private:
     std::vector<point_2f> pts;
+    cg::delaunay_triangulation<double> triangulation;
 };
 
 int main(int argc, char ** argv)
