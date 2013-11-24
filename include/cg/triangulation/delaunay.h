@@ -1,11 +1,44 @@
 #pragma once
 
+#include <boost/shared_ptr.hpp>
+
 #include <cg/primitives/point.h>
 #include <cg/primitives/triangle.h>
+
 #include <iostream>
 
 namespace cg
 {
+    template<class Scalar>
+    class vertex;
+    template<class Scalar>
+    using VP = std::shared_ptr<vertex<Scalar> >;
+
+    template<class Scalar>
+    class edge;
+    template<class Scalar>
+    using EP = std::shared_ptr<edge<Scalar> >;
+
+    template<class Scalar>
+    class face;
+    template<class Scalar>
+    using FP = std::shared_ptr<face<Scalar> >;
+
+    template<class Scalar>
+    class vertex {
+        vertex() {}
+    };
+
+    template<class Scalar>
+    class edge {
+        edge() {}
+    };
+
+    template<class Scalar>
+    class face {
+        face() {}
+    };
+
     template<class Scalar>
     class cell {
     public:
