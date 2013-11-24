@@ -36,6 +36,7 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
     bool on_release(const point_2f & p)
     {
        pts.push_back(p);
+       triangulation.add_point(p);
        return pts.size() > 2;
     }
 
