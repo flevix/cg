@@ -56,6 +56,12 @@ namespace cg
             return first_point->is_inf || next->first_point->is_inf;
         }
 
+        bool contains_vertex(VP<Scalar> v) {
+            return first_point == v
+                   || next->first_point == v
+                   || next->next->first_point == v;
+        }
+
         bool less(EP<Scalar> ep) {
            point_2t<Scalar> edg1_fp = first_point->p;
            point_2t<Scalar> edg1_sp = next->first_point->p;
@@ -129,6 +135,10 @@ namespace cg
             add_face(count_vertex, cur_edge, new_FPS, new_EPS, new_VP);
             add_edge(count_vertex, cur_edge, new_FPS, new_EPS);
 
+            EP<Scalar> edge = cur_edge;
+            for (int i = 0; i < count_vertex; i++, edge = edge->next->twin->next) {
+                fix_edge(edge);
+            }
             return true;
         }
 
@@ -144,19 +154,84 @@ namespace cg
         }
 
     private:
+        bool is_edge_bad(EP<Scalar> e, bool is_twin) {
+            for (VP<Scalar> v : vps) {
+                if (e->contains_vertex(v)
+                        || v->is_inf
+                        || e->next->next->first_point->is_inf) {
+                    continue;
+                }
+                if (is_inside(e->first_point,
+                              e->next->first_point,
+                              e->next->next->first_point,
+                              v)) {
+                    return true;
+                }
+            }
+            if (!is_twin) {
+                return is_edge_bad(e->twin, true);
+            }
+            return false;
+        }
+
+        void fix_edge(EP<Scalar> e) {
+            if (e->twin->first_point->is_inf || e->first_point->is_inf) {
+                return;
+            }
+            if (is_edge_bad(e, false)) {
+                EP<Scalar> f1_edge = e->twin->next;
+                EP<Scalar> f2_edge = e->twin->next->next;
+
+                flip(e);
+
+                fix_edge(f1_edge);
+                fix_edge(f2_edge);
+            }
+        }
+
+        void flip(EP<Scalar> f_edge) {
+            EP<Scalar> new_EP(new edge<Scalar>(f_edge->next->next->first_point));
+            EP<Scalar> twin_EP(new edge<Scalar>(f_edge->twin->next->next->first_point));
+            set_twins(new_EP, twin_EP);
+
+            FP<Scalar> fst_face = f_edge->incedent_face;
+            FP<Scalar> snd_face = f_edge->twin->incedent_face;
+
+            fst_face->incedent_edge = f_edge->next;
+            snd_face->incedent_edge = f_edge->twin->next;
+            f_edge->next->next->incedent_face = snd_face;
+            f_edge->twin->next->next->incedent_face = fst_face;
+
+            new_EP->incedent_face = fst_face;
+            twin_EP->incedent_face = snd_face;
+            new_EP->next = f_edge->twin->next->next;
+            twin_EP->next = f_edge->next->next;
+
+            f_edge->next->next->next = f_edge->twin->next;
+            f_edge->next->next = new_EP;
+            f_edge->twin->next->next->next = f_edge->next;
+            f_edge->twin->next->next = twin_EP;
+        }
+
+        //bad predicat
+        bool is_inside(VP<Scalar> va, VP<Scalar> vb, VP<Scalar> vc, VP<Scalar> vd) {
+             point_2t<Scalar> a = va->p, b = vb->p, c = vc->p, d = vd->p;
+             double a11 = a.x - d.x, a12 = a.y - d.y, a13 = (a.x * a.x - d.x * d.x) + (a.y * a.y - d.y * d.y);
+             double a21 = b.x - d.x, a22 = b.y - d.y, a23 = (b.x * b.x - d.x * d.x) + (b.y * b.y - d.y * d.y);
+             double a31 = c.x - d.x, a32 = c.y - d.y, a33 = (c.x * c.x - d.x * d.x) + (c.y * c.y - d.y * d.y);
+             return a11 * (a22 * a33 - a23 * a32) - a12 * (a21 * a33 - a23 * a31) + a13 * (a21 * a32 - a22 * a31) > 0;
+        }
+
         void add_edge(int count_vertex, EP<Scalar> cur_edge,
                       std::vector<FP<Scalar>> & new_FPS,
                       std::vector<EP<Scalar>> & new_EPS) {
             for (int i = 0; i < count_vertex; i++) {
-               // backup next_edge
                EP<Scalar> tmp = cur_edge->next;
 
-               // nexts
                new_EPS[i]->next = cur_edge;
                new_EPS[i]->twin->next = new_EPS[(i + count_vertex - 1) % count_vertex];
                cur_edge->next = new_EPS[(i + 1) % count_vertex]->twin;
 
-               // faces
                new_EPS[i]->incedent_face = new_FPS[i];
                new_EPS[i]->twin->incedent_face = new_FPS[(i + count_vertex - 1) % count_vertex];
                cur_edge->incedent_face = new_FPS[i];
