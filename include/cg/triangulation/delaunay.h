@@ -55,6 +55,14 @@ namespace cg
             return first_point->is_inf || next->first_point->is_inf;
         }
 
+        bool less(EP<Scalar> ep) {
+           point_2t<Scalar> edg1_fp = first_point->p;
+           point_2t<Scalar> edg1_sp = next->first_point->p;
+           point_2t<Scalar> edg2_fp = ep->first_point->p;
+           point_2t<Scalar> edg2_sp = ep->next->first_point->p;
+           return cg::orientation(edg1_fp, edg1_sp, edg1_sp + (edg2_sp - edg2_fp)) == cg::CG_RIGHT;
+        }
+
         VP<Scalar> first_point;
         EP<Scalar> twin;
         EP<Scalar> next;
@@ -121,7 +129,13 @@ namespace cg
                 }
                 return true;
             }
-            std::vector<int> faces = get_faces(p);
+            std::vector<int> fs_index = get_faces(p);
+            if (fps[fs_index[0]]->is_inf) {
+                std::pair<EP<Scalar>, EP<Scalar> > min_max_ep
+                        = get_minmax_ep(p, fs_index);
+            } else {
+
+            }
             return true;
         }
 
@@ -137,6 +151,36 @@ namespace cg
         }
 
     private:
+        std::pair<EP<Scalar>, EP<Scalar> > get_minmax_ep
+                                          (point_2t<Scalar> const & p,
+                                           std::vector<int> fs_index) {
+            std::pair<EP<Scalar>, EP<Scalar>> min_max_ep;
+            for (size_t i = 0; i < fs_index.size(); i++) {
+                EP<Scalar> cur = fps[fs_index[i]]->incedent_edge;
+                for (int j = 0; j < 3; j++) {
+                    if (!cur->contains_inf() &&
+                            cg::orientation(cur->first_point->p,
+                                            cur->next->first_point->p,
+                                            p) != CG_RIGHT) {
+                        if (min_max_ep.second == nullptr) {
+                            min_max_ep.first = cur;
+                            min_max_ep.second = cur;
+                        } else {
+                            if (cur->less(min_max_ep.first)) {
+                                min_max_ep.first = cur;
+                            }
+                            if (min_max_ep.second->less(cur)) {
+                                min_max_ep.second = cur;
+                            }
+                        }
+                        break;
+                    }
+                    cur = cur->next;
+                }
+            }
+            return min_max_ep;
+        }
+
         std::vector<int> get_faces(point_2t<Scalar> const & p) {
             std::vector<int> result;
             for (size_t i = 0; i < fps.size(); i++) {
