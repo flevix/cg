@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 #include <cg/operations/orientation.h>
 #include <cg/primitives/point.h>
@@ -14,17 +15,17 @@ namespace cg
     template<class Scalar>
     class vertex;
     template<class Scalar>
-    using VP = std::shared_ptr<vertex<Scalar> >;
+    using VP = boost::shared_ptr<vertex<Scalar> >;
 
     template<class Scalar>
     class edge;
     template<class Scalar>
-    using EP = std::shared_ptr<edge<Scalar> >;
+    using EP = boost::shared_ptr<edge<Scalar> >;
 
     template<class Scalar>
     class face;
     template<class Scalar>
-    using FP = std::shared_ptr<face<Scalar> >;
+    using FP = boost::shared_ptr<face<Scalar> >;
 
     template<class Scalar>
     class vertex {
@@ -78,21 +79,6 @@ namespace cg
         face()
             : is_inf(false)
         {}
-        face(VP<Scalar> a, VP<Scalar> b, VP<Scalar> c) {
-            EP<Scalar> eps[3] = {
-                EP<Scalar>(new edge<Scalar>(a)),
-                EP<Scalar>(new edge<Scalar>(b)),
-                EP<Scalar>(new edge<Scalar>(c))
-            };
-            eps[0]->incedent_face = FP<Scalar>(this);
-            eps[1]->incedent_face = FP<Scalar>(this);
-            eps[2]->incedent_face = FP<Scalar>(this);
-
-            eps[0]->next = eps[1];
-            eps[1]->next = eps[2];
-            eps[2]->next = eps[0];
-            incedent_edge = eps[0];
-        }
 
         bool contains_inf() {
             return incedent_edge->first_point->is_inf
@@ -326,15 +312,36 @@ namespace cg
         }
 
         void init() {
-            FP<Scalar> face1(new face<Scalar>(vps[0], vps[2], vps[1]));
-            FP<Scalar> face2(new face<Scalar>(vps[0], vps[1], vps[2]));
+            FP<Scalar> face1 = create_face(vps[0], vps[1], vps[2]);
+            FP<Scalar> face2 = create_face(vps[1], vps[0], vps[2]);
+
             EP<Scalar> inc_edg1 = face1->incedent_edge;
             EP<Scalar> inc_edg2 = face2->incedent_edge;
             set_twins(inc_edg1, inc_edg2);
-            set_twins(inc_edg1->next, inc_edg2->next);
-            set_twins(inc_edg1->next->next, inc_edg2->next->next);
+            set_twins(inc_edg1->next, inc_edg2->next->next);
+            set_twins(inc_edg2->next, inc_edg1->next->next);
             fps.push_back(face1);
             fps.push_back(face2);
+        }
+
+        FP<Scalar> create_face(VP<Scalar> a, VP<Scalar> b, VP<Scalar> c) {
+            FP<Scalar> n_face = boost::make_shared< face<Scalar> >();
+            EP<Scalar> eps[3] = {
+                boost::make_shared< edge<Scalar> >(a),
+                boost::make_shared< edge<Scalar> >(b),
+                boost::make_shared< edge<Scalar> >(c),
+            };
+
+            eps[0]->incedent_face = FP<Scalar>(n_face);
+            eps[1]->incedent_face = FP<Scalar>(n_face);
+            eps[2]->incedent_face = FP<Scalar>(n_face);
+
+            eps[0]->next = eps[1];
+            eps[1]->next = eps[2];
+            eps[2]->next = eps[0];
+            n_face->incedent_edge = eps[0];
+
+            return n_face;
         }
 
         void set_twins(EP<Scalar> ep1, EP<Scalar> ep2) {
