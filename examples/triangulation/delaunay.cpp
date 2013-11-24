@@ -15,6 +15,22 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
     delaunay_viewer()
     { }
  
+    bool check(const std::vector<cg::triangle_2> & ts) const
+    {
+        for (triangle_2 tr : ts) {
+            for (triangle_2 p_tr : ts) {
+                for (int i = 0; i < 3; i++) {
+                    cg::point_2 p = p_tr[i];
+                    if (tr[0] != p && tr[1] != p &&
+                         tr[2] != p && cg::in_circle(tr[0], tr[1], tr[2], p)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     void draw(cg::visualization::drawer_type & drawer) const
     {
         for (triangle_2 tr : trs) {
@@ -29,6 +45,7 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
     void print(cg::visualization::printer_type & p) const
     {
         p.corner_stream() << "rigth click: add point" << cg::visualization::endl;
+        p.corner_stream() << (check(trs) ? "Ok" : "Fail") << cg::visualization::endl;
     }
  
     bool on_release(const point_2f & p)
