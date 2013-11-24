@@ -16,10 +16,8 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
  
     void draw(cg::visualization::drawer_type & drawer) const
     {
-        for (size_t i = 2; i < pts.size(); i += 3) {
+        for (triangle_2 tr : trs) {
             drawer.set_color(Qt::red);
-
-            triangle_2 tr(pts[i - 2], pts[i - 1], pts[i]);
             cg::visualization::draw(drawer, tr);
 
             drawer.set_color(Qt::yellow);
@@ -30,24 +28,22 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
     void print(cg::visualization::printer_type & p) const
     {
         p.corner_stream() << "rigth click: add point" << cg::visualization::endl;
-        p.corner_stream() << "double click: clear" << cg::visualization::endl;
     }
  
     bool on_release(const point_2f & p)
     {
-       pts.push_back(p);
        triangulation.add_point(p);
-       return pts.size() > 2;
+       trs = triangulation.get_triangulation();
+       return true;
     }
 
     bool on_double_click(const cg::point_2f &)
     {
-        pts.clear();
         return true;
     }
 
 private:
-    std::vector<point_2f> pts;
+    std::vector<triangle_2> trs;
     cg::delaunay_triangulation<double> triangulation;
 };
 

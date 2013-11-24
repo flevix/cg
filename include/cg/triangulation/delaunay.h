@@ -78,6 +78,19 @@ namespace cg
             incedent_edge = eps[0];
         }
 
+        bool contains_inf() {
+            return incedent_edge->first_point->is_inf
+                    || incedent_edge->next->first_point->is_inf
+                    || incedent_edge->next->next->first_point->is_inf;
+        }
+
+        triangle_2t<Scalar> get_triangle() {
+            return triangle_2t<Scalar>(
+                        incedent_edge->first_point->p,
+                        incedent_edge->next->first_point->p,
+                        incedent_edge->next->next->first_point->p
+                        );
+        }
 
         EP<Scalar> incedent_edge;
         bool is_inf;
@@ -105,6 +118,17 @@ namespace cg
             }
 
             return true;
+        }
+
+        std::vector<triangle_2t<Scalar> > get_triangles() {
+            std::vector<triangle_2t<Scalar> > trs;
+            for (FP<Scalar> fp : fps) {
+                if (fp->contains_inf()) {
+                    continue;
+                }
+                trs.push_back(fp->get_triangle());
+            }
+            return trs;
         }
 
     private:
@@ -146,14 +170,16 @@ namespace cg
         {}
 
         void add_point(point_2t<Scalar> point) {
-            std::cerr << "add_point: " << point << std::endl;
-            d_cell.add(point);
+            if (d_cell.add(point)) {
+                std::cerr << "add_point: " << point << std::endl;
+            } else {
+                std::cerr << "point: " << point << " contains" << std::endl;
+            }
         }
 
         std::vector<triangle_2t<Scalar> > get_triangulation() {
-            std::cerr << "get_triangulation" << std::endl;
-            std::vector<triangle_2t<Scalar> > t;
-            return t;
+            std::cerr << "get_triangulation" << std::endl;;
+            return d_cell.get_triangles();
         }
 
     private:
