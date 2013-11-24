@@ -5,6 +5,7 @@
 #include <cg/visualization/draw_util.h>
 
 #include <cg/triangulation/delaunay.h>
+#include <cg/triangulation/predicat.h>
 
 using cg::point_2f;
 using cg::triangle_2;

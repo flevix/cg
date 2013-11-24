@@ -7,6 +7,7 @@
 #include <cg/primitives/point.h>
 #include <cg/primitives/triangle.h>
 #include <cg/io/point.h>
+#include <cg/triangulation/predicat.h>
 
 #include <iostream>
 
@@ -154,31 +155,21 @@ namespace cg
         }
 
     private:
-        bool is_edge_bad(EP<Scalar> e, bool is_twin) {
-            for (VP<Scalar> v : vps) {
-                if (e->contains_vertex(v)
-                        || v->is_inf
-                        || e->next->next->first_point->is_inf) {
-                    continue;
-                }
-                if (is_inside(e->first_point,
-                              e->next->first_point,
-                              e->next->next->first_point,
-                              v)) {
-                    return true;
-                }
+        bool is_edge_bad(EP<Scalar> e) {
+            if (e->contains_inf() || e->twin->next->next->first_point->is_inf) {
+                return false;
             }
-            if (!is_twin) {
-                return is_edge_bad(e->twin, true);
-            }
-            return false;
+            return cg::in_circle(e->first_point->p,
+                                 e->next->first_point->p,
+                                 e->next->next->first_point->p,
+                                 e->twin->next->next->first_point->p);
         }
 
         void fix_edge(EP<Scalar> e) {
             if (e->twin->first_point->is_inf || e->first_point->is_inf) {
                 return;
             }
-            if (is_edge_bad(e, false)) {
+            if (is_edge_bad(e)) {
                 EP<Scalar> f1_edge = e->twin->next;
                 EP<Scalar> f2_edge = e->twin->next->next;
 
@@ -211,15 +202,6 @@ namespace cg
             f_edge->next->next = new_EP;
             f_edge->twin->next->next->next = f_edge->next;
             f_edge->twin->next->next = twin_EP;
-        }
-
-        //bad predicat
-        bool is_inside(VP<Scalar> va, VP<Scalar> vb, VP<Scalar> vc, VP<Scalar> vd) {
-             point_2t<Scalar> a = va->p, b = vb->p, c = vc->p, d = vd->p;
-             double a11 = a.x - d.x, a12 = a.y - d.y, a13 = (a.x * a.x - d.x * d.x) + (a.y * a.y - d.y * d.y);
-             double a21 = b.x - d.x, a22 = b.y - d.y, a23 = (b.x * b.x - d.x * d.x) + (b.y * b.y - d.y * d.y);
-             double a31 = c.x - d.x, a32 = c.y - d.y, a33 = (c.x * c.x - d.x * d.x) + (c.y * c.y - d.y * d.y);
-             return a11 * (a22 * a33 - a23 * a32) - a12 * (a21 * a33 - a23 * a31) + a13 * (a21 * a32 - a22 * a31) > 0;
         }
 
         void add_edge(int count_vertex, EP<Scalar> cur_edge,
