@@ -132,6 +132,7 @@ namespace cg
                 }
                 return true;
             }
+
             std::pair<EP<Scalar>, int> fst_and_count = get_first_edge(get_faces(p), p);
 
             int count_vertex = fst_and_count.second;
@@ -140,6 +141,8 @@ namespace cg
             std::vector<EP<Scalar>> new_EPS(count_vertex);
             std::vector<FP<Scalar>> new_FPS(count_vertex);
             add_face(count_vertex, cur_edge, new_FPS, new_EPS, new_VP);
+            add_edge(count_vertex, cur_edge, new_FPS, new_EPS);
+
             return true;
         }
 
@@ -155,6 +158,27 @@ namespace cg
         }
 
     private:
+        void add_edge(int count_vertex, EP<Scalar> cur_edge,
+                      std::vector<FP<Scalar>> & new_FPS,
+                      std::vector<EP<Scalar>> & new_EPS) {
+            for (int i = 0; i < count_vertex; i++) {
+               // backup next_edge
+               EP<Scalar> tmp = cur_edge->next;
+
+               // nexts
+               new_EPS[i]->next = cur_edge;
+               new_EPS[i]->twin->next = new_EPS[(i + count_vertex - 1) % count_vertex];
+               cur_edge->next = new_EPS[(i + 1) % count_vertex]->twin;
+
+               // faces
+               new_EPS[i]->incedent_face = new_FPS[i];
+               new_EPS[i]->twin->incedent_face = new_FPS[(i + count_vertex - 1) % count_vertex];
+               cur_edge->incedent_face = new_FPS[i];
+
+               cur_edge = tmp;
+            }
+        }
+
         void add_face(int count_vertex, EP<Scalar> cur_edge,
                       std::vector<FP<Scalar>> & new_FPS,
                       std::vector<EP<Scalar>> & new_EPS,
@@ -188,9 +212,10 @@ namespace cg
                 if (fs_index.size() != 1) {
                    min_max_ep.second->next->next = min_max_ep.first->next->next;
 
-                   for (int i = 0; i < fs_index.size() - 1; i++) {
+                   for (int i = 0; i < fs_index.size() - 1;
+                                    i++,
+                                    cur_edge = cur_edge->next) {
                       cur_edge->next = cur_edge->next->twin->next;
-                      cur_edge = cur_edge->next;
                    }
                 }
 
@@ -198,12 +223,15 @@ namespace cg
                 count_vertex = fs_index.size() + 2;
 
                 std::vector<bool> to_delete(fps.size(), false);
-                std::vector<FP<Scalar>> new_fps;
                 for (int cur_index : fs_index) {
                    to_delete[cur_index] = true;
                 }
-                for (int i = 0; i < fs_index.size(); i++) {
-                   if (!to_delete[i]) new_fps.push_back(fps[i]);
+
+                std::vector<FP<Scalar>> new_fps;
+                for (int i = 0; i < fps.size(); i++) {
+                   if (!to_delete[i]) {
+                       new_fps.push_back(fps[i]);
+                   }
                 }
                 fps.swap(new_fps);
             } else {
@@ -224,14 +252,15 @@ namespace cg
                             }
                         }
                     }
+
+                    fps.erase(fps.begin() + fs_index[0]);
+                    fps.erase(fps.begin() + fs_index[1]);
+
                     common_edge->next->next->next = common_edge->twin->next;
                     common_edge->twin->next->next->next = common_edge->next;
 
                     first_edge = common_edge->next;
                     count_vertex = 4;
-
-                    fps.erase(fps.begin() + fs_index[0]);
-                    fps.erase(fps.begin() + fs_index[1]);
                 }
             }
             return std::pair<EP<Scalar>, int>(first_edge, count_vertex);
@@ -243,7 +272,7 @@ namespace cg
             std::pair<EP<Scalar>, EP<Scalar>> min_max_ep;
             for (size_t i = 0; i < fs_index.size(); i++) {
                 EP<Scalar> cur = fps[fs_index[i]]->incedent_edge;
-                for (int j = 0; j < 3; j++) {
+                for (int j = 0; j < 3; j++, cur = cur->next) {
                     if (!cur->contains_inf() &&
                             cg::orientation(cur->first_point->p,
                                             cur->next->first_point->p,
@@ -261,7 +290,6 @@ namespace cg
                         }
                         break;
                     }
-                    cur = cur->next;
                 }
             }
             return min_max_ep;
