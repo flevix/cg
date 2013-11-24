@@ -134,6 +134,12 @@ namespace cg
             }
             std::pair<EP<Scalar>, int> fst_and_count = get_first_edge(get_faces(p), p);
 
+            int count_vertex = fst_and_count.second;
+            EP<Scalar> cur_edge = fst_and_count.first;
+
+            std::vector<EP<Scalar>> new_EPS(count_vertex);
+            std::vector<FP<Scalar>> new_FPS(count_vertex);
+            add_face(count_vertex, cur_edge, new_FPS, new_EPS, new_VP);
             return true;
         }
 
@@ -149,6 +155,26 @@ namespace cg
         }
 
     private:
+        void add_face(int count_vertex, EP<Scalar> cur_edge,
+                      std::vector<FP<Scalar>> & new_FPS,
+                      std::vector<EP<Scalar>> & new_EPS,
+                      VP<Scalar> new_VP) {
+            for (int i = 0; i < count_vertex; i++) {
+                EP<Scalar> new_EP(new edge<Scalar>(new_VP));
+                EP<Scalar> twin_EP(new edge<Scalar>(cur_edge->first_point));
+
+                set_twins(new_EP, twin_EP);
+                new_EPS[i] = new_EP;
+
+                face<Scalar> * cur_face = new face<Scalar>();
+                new_FPS[i] = FP<Scalar>(cur_face);
+                cur_face->incedent_edge = cur_edge;
+                fps.push_back(new_FPS[i]);
+
+                cur_edge = cur_edge->next;
+            }
+        }
+
         std::pair<EP<Scalar>, int> get_first_edge(std::vector<int> fs_index,
                                                   point_2t<Scalar> const & p) {
             EP<Scalar> first_edge;
