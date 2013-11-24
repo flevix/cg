@@ -60,7 +60,10 @@ namespace cg
            point_2t<Scalar> edg1_sp = next->first_point->p;
            point_2t<Scalar> edg2_fp = ep->first_point->p;
            point_2t<Scalar> edg2_sp = ep->next->first_point->p;
-           return cg::orientation(edg1_fp, edg1_sp, edg1_sp + (edg2_sp - edg2_fp)) == cg::CG_RIGHT;
+           return cg::orientation(edg1_fp,
+                                  edg1_sp,
+                                  edg1_sp + (edg2_sp - edg2_fp))
+                                                                == cg::CG_RIGHT;
         }
 
         VP<Scalar> first_point;
@@ -129,13 +132,8 @@ namespace cg
                 }
                 return true;
             }
-            std::vector<int> fs_index = get_faces(p);
-            if (fps[fs_index[0]]->is_inf) {
-                std::pair<EP<Scalar>, EP<Scalar> > min_max_ep
-                        = get_minmax_ep(p, fs_index);
-            } else {
+            std::pair<EP<Scalar>, int> fst_and_count = get_first_edge(get_faces(p), p);
 
-            }
             return true;
         }
 
@@ -151,6 +149,68 @@ namespace cg
         }
 
     private:
+        std::pair<EP<Scalar>, int> get_first_edge(std::vector<int> fs_index,
+                                                  point_2t<Scalar> const & p) {
+            EP<Scalar> first_edge;
+            int count_vertex;
+
+            if (fps[fs_index[0]]->is_inf) {
+                std::pair<EP<Scalar>, EP<Scalar> > min_max_ep
+                        = get_minmax_ep(p, fs_index);
+
+                EP<Scalar> cur_edge = min_max_ep.first;
+                if (fs_index.size() != 1) {
+                   min_max_ep.second->next->next = min_max_ep.first->next->next;
+
+                   for (int i = 0; i < fs_index.size() - 1; i++) {
+                      cur_edge->next = cur_edge->next->twin->next;
+                      cur_edge = cur_edge->next;
+                   }
+                }
+
+                first_edge = min_max_ep.first;
+                count_vertex = fs_index.size() + 2;
+
+                std::vector<bool> to_delete(fps.size(), false);
+                std::vector<FP<Scalar>> new_fps;
+                for (int cur_index : fs_index) {
+                   to_delete[cur_index] = true;
+                }
+                for (int i = 0; i < fs_index.size(); i++) {
+                   if (!to_delete[i]) new_fps.push_back(fps[i]);
+                }
+                fps.swap(new_fps);
+            } else {
+                if (fs_index.size() < 2) {
+                    first_edge = fps[fs_index[0]]->incedent_edge;
+                    count_vertex = 3;
+
+                    fps.erase(fps.begin() + fs_index[0]);
+                } else { //fs_index.size == 2 -> point on the edge
+                    EP<Scalar> cur_edge = fps[fs_index[0]]->incedent_edge;
+                    EP<Scalar> common_edge;
+
+                    for (int i = 0; i < 3; i++, cur_edge = cur_edge->next) {
+                        EP<Scalar> cur_snd_edge = fps[fs_index[1]]->incedent_edge;
+                        for (int j = 0; j < 3; j++, cur_snd_edge = cur_snd_edge->next) {
+                            if (cur_snd_edge->twin == cur_edge) {
+                                common_edge = cur_edge;
+                            }
+                        }
+                    }
+                    common_edge->next->next->next = common_edge->twin->next;
+                    common_edge->twin->next->next->next = common_edge->next;
+
+                    first_edge = common_edge->next;
+                    count_vertex = 4;
+
+                    fps.erase(fps.begin() + fs_index[0]);
+                    fps.erase(fps.begin() + fs_index[1]);
+                }
+            }
+            return std::pair<EP<Scalar>, int>(first_edge, count_vertex);
+        }
+
         std::pair<EP<Scalar>, EP<Scalar> > get_minmax_ep
                                           (point_2t<Scalar> const & p,
                                            std::vector<int> fs_index) {
