@@ -2,6 +2,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <cg/operations/orientation.h>
 #include <cg/primitives/point.h>
 #include <cg/primitives/triangle.h>
 #include <cg/io/point.h>
@@ -49,6 +50,10 @@ namespace cg
         edge(VP<Scalar> fst)
             : first_point(fst)
         {}
+
+        bool contains_inf() {
+            return first_point->is_inf || next->first_point->is_inf;
+        }
 
         VP<Scalar> first_point;
         EP<Scalar> twin;
@@ -103,7 +108,7 @@ namespace cg
             vps.push_back(VP<Scalar>(new vertex<Scalar>(true)));
         }
 
-        bool add(point_2t<Scalar> p) {
+        bool add(point_2t<Scalar> const & p) {
             if (contains(p)) {
                 std::cerr << "contains: " << p << std::endl;
                 return false;
@@ -116,7 +121,7 @@ namespace cg
                 }
                 return true;
             }
-
+            std::vector<int> faces = get_faces(p);
             return true;
         }
 
@@ -132,6 +137,36 @@ namespace cg
         }
 
     private:
+        std::vector<int> get_faces(point_2t<Scalar> const & p) {
+            std::vector<int> result;
+            for (size_t i = 0; i < fps.size(); i++) {
+                FP<Scalar> f = fps[i];
+                f->is_inf = false;
+                EP<Scalar> cur = f->incedent_edge;
+                bool good_face = true;
+                for (int j = 0; j < 3; j++) {
+                    if (cur->contains_inf()) {
+                        cur = cur->next;
+                        f->is_inf = true;
+                        continue;
+                   }
+
+                   if (cg::orientation(cur->first_point->p,
+                                       cur->next->first_point->p,
+                                       p) == CG_RIGHT) {
+                       good_face = false;
+                       break;
+                   }
+                   cur = cur->next;
+                }
+
+                if (good_face) {
+                    result.push_back(i);
+                }
+            }
+            return result;
+        }
+
         void init() {
             FP<Scalar> face1(new face<Scalar>(vps[0], vps[2], vps[1]));
             FP<Scalar> face2(new face<Scalar>(vps[0], vps[1], vps[2]));
@@ -178,7 +213,6 @@ namespace cg
         }
 
         std::vector<triangle_2t<Scalar> > get_triangulation() {
-            std::cerr << "get_triangulation" << std::endl;;
             return d_cell.get_triangles();
         }
 
