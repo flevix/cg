@@ -43,12 +43,44 @@ namespace cg
 
     template<class Scalar>
     class edge {
-        edge() {}
+    public:
+        edge()
+        {}
+        edge(VP<Scalar> fst)
+            : first_point(fst)
+        {}
+
+        VP<Scalar> first_point;
+        EP<Scalar> twin;
+        EP<Scalar> next;
+        FP<Scalar> incedent_face;
     };
 
     template<class Scalar>
     class face {
-        face() {}
+    public:
+        face()
+            : is_inf(false)
+        {}
+        face(VP<Scalar> a, VP<Scalar> b, VP<Scalar> c) {
+            EP<Scalar> eps[3] = {
+                EP<Scalar>(new edge<Scalar>(a)),
+                EP<Scalar>(new edge<Scalar>(b)),
+                EP<Scalar>(new edge<Scalar>(c))
+            };
+            eps[0]->incedent_face = FP<Scalar>(this);
+            eps[1]->incedent_face = FP<Scalar>(this);
+            eps[2]->incedent_face = FP<Scalar>(this);
+
+            eps[0]->next = eps[1];
+            eps[1]->next = eps[2];
+            eps[2]->next = eps[0];
+            incedent_edge = eps[0];
+        }
+
+
+        EP<Scalar> incedent_edge;
+        bool is_inf;
     };
 
     template<class Scalar>
@@ -58,16 +90,41 @@ namespace cg
             vps.push_back(VP<Scalar>(new vertex<Scalar>(true)));
         }
 
-        void add(point_2t<Scalar> p) {
+        bool add(point_2t<Scalar> p) {
             if (contains(p)) {
                 std::cerr << "contains: " << p << std::endl;
-                return;
+                return false;
             }
-            VP<Scalar> a(VP<Scalar>(new vertex<Scalar>(p)));
-            vps.push_back(a);
+            VP<Scalar> new_VP(VP<Scalar>(new vertex<Scalar>(p)));
+            vps.push_back(new_VP);
+            if (vps.size() < 4) {
+                if (vps.size() == 3) {
+                    init();
+                }
+                return true;
+            }
+
+            return true;
         }
 
     private:
+        void init() {
+            FP<Scalar> face1(new face<Scalar>(vps[0], vps[2], vps[1]));
+            FP<Scalar> face2(new face<Scalar>(vps[0], vps[1], vps[2]));
+            EP<Scalar> inc_edg1 = face1->incedent_edge;
+            EP<Scalar> inc_edg2 = face2->incedent_edge;
+            set_twins(inc_edg1, inc_edg2);
+            set_twins(inc_edg1->next, inc_edg2->next);
+            set_twins(inc_edg1->next->next, inc_edg2->next->next);
+            fps.push_back(face1);
+            fps.push_back(face2);
+        }
+
+        void set_twins(EP<Scalar> ep1, EP<Scalar> ep2) {
+            ep1->twin = ep2;
+            ep2->twin = ep1;
+        }
+
         bool contains(point_2t<Scalar> const & p) {
             if (std::any_of(vps.begin(), vps.end(),
                     [&p](VP<Scalar> vp) { return vp->p == p; })
