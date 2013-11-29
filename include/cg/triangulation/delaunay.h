@@ -277,34 +277,11 @@ namespace cg
                    }
                 }
                 fps.swap(new_fps);
-            } else {
-                if (fs_index.size() < 2) {
-                    first_edge = fps[fs_index[0]]->incedent_edge;
-                    count_vertex = 3;
+            } else { //in face
+                first_edge = fps[fs_index[0]]->incedent_edge;
+                count_vertex = 3;
 
-                    fps.erase(fps.begin() + fs_index[0]);
-                } else { //fs_index.size == 2 -> point on the edge
-                    EP<Scalar> cur_edge = fps[fs_index[0]]->incedent_edge;
-                    EP<Scalar> common_edge;
-
-                    for (int i = 0; i < 3; i++, cur_edge = cur_edge->next) {
-                        EP<Scalar> cur_snd_edge = fps[fs_index[1]]->incedent_edge;
-                        for (int j = 0; j < 3; j++, cur_snd_edge = cur_snd_edge->next) {
-                            if (cur_snd_edge->twin == cur_edge) {
-                                common_edge = cur_edge;
-                            }
-                        }
-                    }
-
-                    fps.erase(fps.begin() + fs_index[0]);
-                    fps.erase(fps.begin() + fs_index[1]);
-
-                    common_edge->next->next->next = common_edge->twin->next;
-                    common_edge->twin->next->next->next = common_edge->next;
-
-                    first_edge = common_edge->next;
-                    count_vertex = 4;
-                }
+                fps.erase(fps.begin() + fs_index[0]);
             }
             return std::pair<EP<Scalar>, int>(first_edge, count_vertex);
         }
@@ -314,12 +291,12 @@ namespace cg
                                            std::vector<int> fs_index) {
             std::pair<EP<Scalar>, EP<Scalar>> min_max_ep;
             for (size_t i = 0; i < fs_index.size(); i++) {
+                if (!fps[fs_index[i]]->is_inf) {
+                    continue;
+                }
                 EP<Scalar> cur = fps[fs_index[i]]->incedent_edge;
                 for (int j = 0; j < 3; j++, cur = cur->next) {
-                    if (!cur->contains_inf() &&
-                            cg::orientation(cur->first_point->p,
-                                            cur->next->first_point->p,
-                                            p) != CG_RIGHT) {
+                    if (!cur->contains_inf()) {
                         if (min_max_ep.second == nullptr) {
                             min_max_ep.first = cur;
                             min_max_ep.second = cur;
@@ -340,6 +317,7 @@ namespace cg
 
         std::vector<int> get_faces(point_2t<Scalar> const & p) {
             std::vector<int> result;
+            bool was_inf = false;
             for (size_t i = 0; i < fps.size(); i++) {
                 FP<Scalar> f = fps[i];
                 f->is_inf = false;
@@ -360,9 +338,20 @@ namespace cg
                    }
                    cur = cur->next;
                 }
-
-                if (good_face) {
+                if (!good_face) {
+                    continue;
+                }
+                if (f->is_inf && !was_inf) {
+                    was_inf = true;
+                }
+                if (was_inf) {
+                    if (f->is_inf) {
+                        result.push_back(i);
+                        return result;
+                    }
+                } else {
                     result.push_back(i);
+                    return result;
                 }
             }
             return result;
