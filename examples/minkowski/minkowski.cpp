@@ -56,27 +56,29 @@ struct minkowski_viewer : cg::visualization::viewer_adapter
             }
         } else
         {
-//             drawer.set_color(Qt::blue);
-//             drawer.draw_point(center, 3);
-//             auto result_cont = cg::get_minkovsky_sum(contour_2(conts[0]), contour_2(reversed));
-//             contour result;
-//             for (auto it = result_cont.begin(); it != result_cont.end(); it++) {
-//                 result.push_back(*it);
-//             }
+             drawer.set_color(Qt::blue);
+             drawer.draw_point(center, 3);
+             auto result_cont = cg::get_minkovsky_sum(contour_2(conts[0]), contour_2(reversed));
+             contour result;
+             for (auto it = result_cont.begin(); it != result_cont.end(); it++) {
+                 result.push_back(*it);
+             }
 
-//             for (size_t i = 0; i < result.size(); ++i)
-//             {
-//                  size_t j = (i + 1) % result.size();
-//                 drawer.draw_line(result[i], result[j]);
-//             }
+             for (size_t i = 0; i < result.size(); ++i)
+             {
+                 size_t j = (i + 1) % result.size();
+                 drawer.draw_line(result[i], result[j]);
+             }
         }
     }
 
     void print(cg::visualization::printer_type & p) const
     {
-        p.corner_stream() << "double-click to clear." << cg::visualization::endl
-                                << "press mouse rbutton for add vertex (click to first point to complete contour)" << cg::visualization::endl
-                                << "move vertex with rbutton" << cg::visualization::endl;
+        p.corner_stream() << "double-click to clear." << cg::visualization::endl;
+        p.corner_stream() << "press mouse rbutton for add vertex"
+                              << "(click to first point to complete contour)"
+                              << cg::visualization::endl;
+        p.corner_stream() << "move vertex with rbutton" << cg::visualization::endl;
     }
 
     bool on_double_click(const point_2f & p)
