@@ -156,9 +156,6 @@ namespace cg
 
     private:
         bool is_edge_bad(EP<Scalar> e) {
-            if (e->contains_inf() || e->twin->next->next->first_point->is_inf) {
-                return false;
-            }
             return cg::in_circle(e->first_point->p,
                                  e->next->first_point->p,
                                  e->next->next->first_point->p,
@@ -166,7 +163,7 @@ namespace cg
         }
 
         void fix_edge(EP<Scalar> e) {
-            if (e->twin->first_point->is_inf || e->first_point->is_inf) {
+            if (e->contains_inf() || e->twin->next->next->first_point->is_inf) {
                 return;
             }
             if (is_edge_bad(e)) {
