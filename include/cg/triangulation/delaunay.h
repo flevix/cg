@@ -347,7 +347,6 @@ namespace cg
                 if (was_inf) {
                     if (f->is_inf) {
                         result.push_back(i);
-                        return result;
                     }
                 } else {
                     result.push_back(i);
