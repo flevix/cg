@@ -45,6 +45,7 @@ namespace cg
          y += delta.y;
          return *this;
       }
+
    };
 
    template <class Scalar>
@@ -85,6 +86,12 @@ namespace cg
    bool operator != (point_2t<Scalar> const & a, point_2t<Scalar> const & b)
    {
       return !(a == b);
+   }
+
+   template <class Scalar>
+   point_2t<Scalar> const operator + (point_2t<Scalar> const & a, point_2t<Scalar> const & b)
+   {
+      return point_2t<Scalar>(a.x + b.x, a.y + b.y);
    }
 
    // в этом месте возможно переполнение!
