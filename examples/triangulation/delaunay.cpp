@@ -7,6 +7,12 @@
 #include <cg/triangulation/delaunay.h>
 #include <cg/triangulation/predicat.h>
 
+#include <boost/random.hpp>
+#include <cg/primitives/point.h>
+#include <misc/random_utils.h>
+
+#include <cmath>
+
 using cg::point_2f;
 using cg::triangle_2;
 
@@ -14,7 +20,7 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
 {
     delaunay_viewer()
     { }
- 
+
     bool check(const std::vector<cg::triangle_2> & ts) const
     {
         for (triangle_2 tr : ts) {
@@ -61,6 +67,7 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
     }
 
 private:
+    int test = 0;
     std::vector<triangle_2> trs;
     cg::delaunay_triangulation<double> triangulation;
 };

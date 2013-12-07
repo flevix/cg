@@ -413,9 +413,9 @@ namespace cg
 
         void add_point(point_2t<Scalar> point) {
             if (d_cell.add(point)) {
-                std::cerr << "add_point: " << point << std::endl;
+//                std::cerr << "add_point: " << point << std::endl;
             } else {
-                std::cerr << "point: " << point << " contains" << std::endl;
+//                std::cerr << "point: " << point << " contains" << std::endl;
             }
         }
 
