@@ -22,7 +22,7 @@ set(SOURCES
 #   convex.cpp
 #   simplify.cpp
 #   diameter.cpp
-   delaunay.cpp
+#   delaunay.cpp
    minkowski.cpp
 )
 
